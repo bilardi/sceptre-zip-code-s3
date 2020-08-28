@@ -1,6 +1,6 @@
 # Sceptre zip-code-s3
 
-Hook and resolver for [Sceptre](https://sceptre.cloudreach.com/latest/) `v1.3.4+` to package complex Lambda functions on-the-fly and deploy them using S3 bucket.
+Hook and resolver for [Sceptre](https://sceptre.cloudreach.com/latest/) to package complex Lambda functions on-the-fly and deploy them using S3 bucket.
 
 This solution, fully compatible with **Python 2/3**, works well for **ALL** AWS Lambda runtimes: just tune `Makefile` with your own instructions for concrete runtime.
 
@@ -20,13 +20,27 @@ Therefore, such archived artifacts should never be checked in, rather packaged a
 
 ### How To install
 
-`NB!` _Sceptre `1.x` does not yet recognize `entry_points` installation option from `pip` setup manifesto._
+`NB!` _Sceptre does not yet recognize `entry_points` installation option from `pip` setup manifesto._
 _Therefore, it's not possible to install it using `pip`_.
 
 * Clone the repository locally:
 
     ```bash
     $ git clone git@github.com:cloudreach/sceptre-zip-code-s3.git
+    ```
+
+_If you want Makefile, configuration, hook, resolver and README.md compatible with Sceptre version from `1.3.4` to `1.5.0`_, run also
+
+    ```bash
+    $ cd sceptre-zip-code-s3.git
+    $ git checkout tags/v0.1.2 -b sceptre-until-1.5.0
+    ```
+
+And _if you want Makefile, configuration, hook, resolver and README.md compatible with Sceptre version from `2.1.2`_, run also
+
+    ```bash
+    $ cd sceptre-zip-code-s3.git
+    $ git checkout master
     ```
 
 * Install required dependencies:
@@ -58,7 +72,7 @@ To display available commands, run `make` or `make help` command.
 * Create new `S3` bucket for artifacts deployments:
 
     ```bash
-    $ sceptre launch-env example/storage
+    $ sceptre launch example/storage
     ```
 
     `NB!` _It's possible to refer existing bucket, with enabled **Versioning** support._
@@ -68,15 +82,15 @@ To display available commands, run `make` or `make help` command.
 * Deploy whole environment at once:
 
     ```bash
-    $ sceptre launch-env example/serverless
+    $ sceptre launch example/serverless
     ```
 
 * Or deploy stacks one by one:
 
     ```bash
-    $ sceptre launch-stack example/serverless lambda-role
-    $ sceptre launch-stack example/serverless lambda-py2-deps
-    $ sceptre launch-stack example/serverless lambda-py3-deps-custom
+    $ sceptre launch example/serverless/lambda-role
+    $ sceptre launch example/serverless/lambda-py2-deps
+    $ sceptre launch example/serverless/lambda-py3-deps-custom
     ```
 
 This is what have been done (per function):
@@ -92,9 +106,10 @@ This is what have been done (per function):
 Find generated function name and region:
 
 ```bash
-$ LAMBDA=( $(sceptre describe-stack-outputs example/serverless lambda-py2-deps \
+$ LAMBDA=( $(sceptre --output json list outputs example/serverless/lambda-py2-deps.yaml \
     | grep ':lambda:' \
-    | awk -F: '{print $NF, $5}') )
+    | awk -F: '{print $NF, $5}' \
+    | sed 's/"//') )
 ```
 
 And then invoke function with JSON payload and parse result file:
@@ -125,13 +140,13 @@ key3:
 * Do not forget to cleanup infrastructure after testing:
 
     ```bash
-    $ sceptre delete-env example/serverless
+    $ sceptre delete example/serverless
     ```
 
 * If new S3 bucket was created during the test:
 
     ```bash
-    $ sceptre delete-env example/storage
+    $ sceptre delete example/storage
     ```
 
     If it errors with `You must delete all versions in the bucket`, then:
@@ -141,7 +156,7 @@ key3:
 
     $ python -c "import boto3; boto3.resource('s3').Bucket('${MY_BUCKET}').object_versions.delete()"
 
-    $ sceptre delete-env example/storage
+    $ sceptre delete example/storage
     ```
 
 ## Under the hood
@@ -204,8 +219,8 @@ As hook definition, resolver also has **auto-discovery** and **direct** modes.
     ```yaml
     sceptre_user_data:
         Code:
-            S3Bucket: !stack_output my-other-stack::BucketName
-            S3Key: !stack_output my-other-stack::KeyName
+            S3Bucket: !stack_output path-without-config/my-other-stack.yaml::BucketName
+            S3Key: !stack_output path-without-config/my-other-stack.yaml::KeyName
             S3ObjectVersion: !s3_version
     ```
 
@@ -281,7 +296,7 @@ In other use-cases hook will upload archive every time it's called, as content M
 
 #### Caveats
 
-- note that Sceptre `v1.3.4` was tested only and it may misbehave on previous versions.
+- note that this package was tested with Sceptre `v1.3.4`, `v1.5.0`, `v2.1.2` and `v2.3.0` and it may misbehave on previous versions.
 - when running `Sceptre` from OSX, some packages may contain binary inside, so be sure to upload the proper one.
 - custom encryption might require custom MD5/ETag lookup solution, see [S3 encryption](#s3-encryption)
 

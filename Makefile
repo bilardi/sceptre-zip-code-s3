@@ -32,16 +32,18 @@ help:
 ## Install dependencies for this project
 deps: clean
 	pip install -r requirements.txt
+	for dir in ./hooks/*; do (cd "$$dir" && pip install .); done
+	for dir in ./resolvers/*; do (cd "$$dir" && pip install .); done
 
 ## Copy plugins file to TARGET= sceptre project
 plugins:
 ifeq (, $(TARGET))
-	$(error Please specity TARGET= value)
+	$(error Please specify TARGET= value)
 endif
 	/bin/test -d "$(TARGET)/hooks" || mkdir -p "$(TARGET)/hooks"
 	/bin/test -d "$(TARGET)/resolvers" || mkdir -p "$(TARGET)/resolvers"
-	/bin/cp -f hooks/s3_package.py "$(TARGET)/hooks/"
-	/bin/cp -f resolvers/s3_version.py "$(TARGET)/resolvers/"
+	/bin/cp -rf hooks/s3_package "$(TARGET)/hooks/"
+	/bin/cp -rf resolvers/s3_version "$(TARGET)/resolvers/"
 
 ## Clean temporary artifacts
 clean:

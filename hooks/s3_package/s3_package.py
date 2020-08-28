@@ -38,8 +38,8 @@ class S3Package(Hook):
             self.logger.debug(
                 "[{}] S3 bucket/key parsed from the argument".format(self.NAME)
             )
-        elif "sceptre_user_data" in self.stack_config:
-            code = self.stack_config.get("sceptre_user_data").get("Code", {})
+        elif self.stack.sceptre_user_data and "Code" in self.stack.sceptre_user_data:
+            code = self.stack.sceptre_user_data.get("Code", {})
             fn_root_dir, s3_bucket, s3_key = [
                 self.argument,
                 code.get("S3Bucket"),
@@ -110,7 +110,7 @@ class S3Package(Hook):
         md5.update(content)
 
         try:
-            self.connection_manager.call(
+            self.stack.connection_manager.call(
                 service="s3",
                 command="head_object",
                 kwargs={
@@ -135,7 +135,7 @@ class S3Package(Hook):
                 )
             )
 
-            result = self.connection_manager.call(
+            result = self.stack.connection_manager.call(
                 service="s3",
                 command="put_object",
                 kwargs={
